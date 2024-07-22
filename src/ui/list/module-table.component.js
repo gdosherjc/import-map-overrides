@@ -5,23 +5,27 @@ export default class ModuleTable extends Component {
     const toSetTo = (mod) => {
       const setTo = [];
 
-      if (mod.overrideUrl && !mod.disabled) {
+      if (mod.overrideUrl) {
         if (this.props.stagingMap && this.props.stagingMap.imports[mod.moduleName] === mod.overrideUrl) {
           setTo.push('staging');
         }
         if (this.props.prodMap && this.props.prodMap.imports[mod.moduleName] === mod.overrideUrl) {
           setTo.push('prod');
         }
-        if (mod.overrideUrl.indexOf('http://localhost') > -1) {
-          return 'local';
+
+        if (setTo.length > 0) {
+          return setTo.join(', ');
+        } else {
+          if (mod.overrideUrl.indexOf('http://localhost') > -1) {
+            return 'local';
+          } else if (mod.overrideUrl.indexOf('localdev-cicd-jumpcloud-com') > -1) {
+            const [, version] = mod.overrideUrl.match(/localdev-cicd-jumpcloud-com.*?\.com\/(.*?)\//)
+            return version;
+          }
         }
       }
 
-      if (setTo.length === 0) {
-        return 'default';
-      } else {
-        return setTo.join(', ');
-      }
+      return 'default';
     }
 
     return (
@@ -44,9 +48,11 @@ export default class ModuleTable extends Component {
               key={mod.moduleName}
             >
               <td onClick={this.reload} role="button" tabIndex={0}>
-                <div className="imo-status imo-next-override" />
-                <div>Inline Override</div>
-                <div className="imo-needs-refresh" />
+                <div>
+                  <div className="imo-status imo-next-override" />
+                  <div>Inline Override</div>
+                  <div className="imo-needs-refresh" />
+                </div>
               </td>
               <td>{mod.moduleName}</td>
               <td>{toSetTo(mod)}</td>
@@ -62,9 +68,11 @@ export default class ModuleTable extends Component {
               key={mod.moduleName}
             >
               <td style={{ position: "relative" }}>
-                <div className="imo-status imo-next-default" />
-                <div>Default</div>
-                <div className="imo-needs-refresh" />
+                <div>
+                  <div className="imo-status imo-next-default" />
+                  <div>Default</div>
+                  <div className="imo-needs-refresh" />
+                </div>
               </td>
               <td>{mod.moduleName}</td>
               <td>{toSetTo(mod)}</td>
@@ -80,8 +88,10 @@ export default class ModuleTable extends Component {
               key={mod.moduleName}
             >
               <td>
-                <div className="imo-status imo-disabled-override" />
-                <div>Override disabled</div>
+                <div>
+                  <div className="imo-status imo-disabled-override" />
+                  <div>Override disabled</div>
+                </div>
               </td>
               <td>{mod.moduleName}</td>
               <td>{toSetTo(mod)}</td>
@@ -97,8 +107,10 @@ export default class ModuleTable extends Component {
               key={mod.moduleName}
             >
               <td>
-                <div className="imo-status imo-current-override" />
-                <div>Inline Override</div>
+                <div>
+                  <div className="imo-status imo-current-override" />
+                  <div>Inline Override</div>
+                </div>
               </td>
               <td>{mod.moduleName}</td>
               <td>{toSetTo(mod)}</td>
@@ -114,8 +126,10 @@ export default class ModuleTable extends Component {
               key={mod.moduleName}
             >
               <td>
-                <div className="imo-status imo-external-override" />
-                <div>External Override</div>
+                <div>
+                  <div className="imo-status imo-external-override" />
+                  <div>External Override</div>
+                </div>
               </td>
               <td>{mod.moduleName}</td>
               <td>{toSetTo(mod)}</td>
@@ -132,8 +146,10 @@ export default class ModuleTable extends Component {
               title="Automatically use dev version of certain npm libs"
             >
               <td>
-                <div className="imo-status imo-dev-lib-override" />
-                <div>Dev Lib Override</div>
+                <div>
+                  <div className="imo-status imo-dev-lib-override" />
+                  <div>Dev Lib Override</div>
+                </div>
               </td>
               <td>{mod.moduleName}</td>
               <td>{toSetTo(mod)}</td>
@@ -149,8 +165,10 @@ export default class ModuleTable extends Component {
               key={mod.moduleName}
             >
               <td>
-                <div className="imo-status imo-default-module" />
-                <div>Default</div>
+                <div>
+                  <div className="imo-status imo-default-module" />
+                  <div>Default</div>
+                </div>
               </td>
               <td>{mod.moduleName}</td>
               <td>{toSetTo(mod)}</td>

@@ -332,6 +332,7 @@ export default class List extends Component {
         <h3>Apps</h3>
         <div class="button-row">
           <p>Set to:</p>
+          <button onClick={resetAllApps}>Default</button>
           <button onClick={setToStaging}>Staging</button>
           <button onClick={setToProd}>Production</button>
           {

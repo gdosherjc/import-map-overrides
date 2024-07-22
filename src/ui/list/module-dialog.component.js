@@ -1,4 +1,5 @@
 import { h, Component } from "preact";
+import { localMap } from "../../util/localmap";
 
 export default class ModuleDialog extends Component {
   getInitialOverrideUrl = () => {
@@ -163,6 +164,13 @@ export default class ModuleDialog extends Component {
               >
                 {this.state.overrideUrl ? "Apply override" : "Reset to default"}
               </button>
+              <button
+                style={{ marginRight: "16px" }}
+                type="button"
+                onClick={this.handleSetToLocal}
+              >
+                Set to Local
+              </button>
             </div>
           </form>
         </dialog>
@@ -181,6 +189,15 @@ export default class ModuleDialog extends Component {
   dialogRef = (el) => {
     this.dialogEl = el;
   };
+
+  handleSetToLocal = () => {
+    const url = localMap[this.props.module.moduleName]
+    if (url) {
+      this.props.updateModuleUrl(url);
+    } else {
+      console.error(`No local url found for ${this.props.module.moduleName}; Please update import-map-overrides`);
+    }
+  }
 
   handleSubmit = (evt) => {
     evt.preventDefault();
