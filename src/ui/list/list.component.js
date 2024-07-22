@@ -5,6 +5,7 @@ import ExternalImportMap from "./external-importmap-dialog.component";
 import { devLibs } from "../dev-lib-overrides.component";
 import ModuleTable from "./module-table.component.js";
 import { expandRelativeUrlsInImportMap } from '../../api/js-api.js';
+import { getOctokit } from "../../util/github.js";
 
 const stagingUrl = "https://console.stg01.jumpcloud.com/importmap.json";
 const prodUrl = "https://console.jumpcloud.com/importmap.json"
@@ -20,6 +21,7 @@ export default class List extends Component {
     stagingMap: { imports: {} },
     prodMap: { imports: {} },
     prMap: { imports: {} },
+    prUrl: "",
   };
   componentDidMount() {
     window.importMapOverrides.getDefaultMap().then((notOverriddenMap) => {
@@ -192,6 +194,16 @@ export default class List extends Component {
     const { brokenMaps, workingCurrentPageMaps, workingNextPageMaps } =
       getExternalMaps();
 
+    const allApps = [
+      ...apps.nextOverriddenModules,
+      ...apps.pendingRefreshDefaultModules,
+      ...apps.disabledOverrides,
+      ...apps.overriddenModules,
+      ...apps.externalOverrideModules,
+      ...apps.devLibModules,
+      ...apps.defaultModules,
+    ]
+
     const allFallbacks = [
       ...fallbacks.nextOverriddenModules,
       ...fallbacks.pendingRefreshDefaultModules,
@@ -201,6 +213,12 @@ export default class List extends Component {
       ...fallbacks.devLibModules,
       ...fallbacks.defaultModules,
     ]
+
+    const resetAllApps = () => {
+      allApps.forEach(app => {
+        window.importMapOverrides.removeOverride(app.moduleName);
+      })
+    }
 
     const disableAllFallbacks = () => {
       allFallbacks.forEach(fallback => {
@@ -236,7 +254,40 @@ export default class List extends Component {
       setToMap(prodMap);
     }
 
+    const githubToken = window.localStorage.getItem('githubToken');
+
     const setToPr = async () => {
+      const splitPrUrl = this.state.prUrl.split('/')
+      const prNumber = splitPrUrl[splitPrUrl.indexOf('pull') + 1]
+
+      const octokit = getOctokit(githubToken);
+      const comments = await octokit.rest.issues.listComments({
+        owner: 'TheJumpCloud',
+        repo: 'jumpcloud-admin-portal',
+        issue_number: prNumber,
+      })
+
+      const latestComment = comments.data
+        .filter(x => x.user.login === 'jumpcloud-originbot' && x.body.indexOf('To test the changes in this PR') > -1)
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+
+      const matches = [...latestComment.body.matchAll(/localStorage\.setItem\('import-map-override:(.*)', '(.*)'\);/g)]
+      const prImportMap = {
+        imports: {},
+      };
+
+      if (matches?.length) {
+        matches.forEach((match) => {
+          prImportMap.imports[match[1]] = match[2];
+        })
+      } else {
+        console.error('unable to get import map overrides from PR');
+      }
+
+      resetAllApps();
+
+      this.setState({ prMap: prImportMap });
+      setToMap(prImportMap);
     };    
 
     return (
@@ -283,7 +334,21 @@ export default class List extends Component {
           <p>Set to:</p>
           <button onClick={setToStaging}>Staging</button>
           <button onClick={setToProd}>Production</button>
-          <button onClick={setToPr}>PR</button>
+          {
+            githubToken ? (
+              <div class="button-row">
+                <button onClick={setToPr}>PR</button>
+                <input
+                  className="imo-list-search"
+                  aria-label="Url to pull request"
+                  placeholder="https://github.com/TheJumpCloud/jumpcloud-admin-portal/pull/10130"
+                  value={this.state.prUrl}
+                  onInput={(evt) => this.setState({ prUrl: evt.target.value })}
+                />
+              </div>
+            ) : ''
+          }
+          
         </div>
         <ModuleTable
           nextOverriddenModules={apps.nextOverriddenModules}
