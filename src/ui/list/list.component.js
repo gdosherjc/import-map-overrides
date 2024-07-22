@@ -3,6 +3,7 @@ import { includes } from "../../util/includes.js";
 import ModuleDialog from "./module-dialog.component";
 import ExternalImportMap from "./external-importmap-dialog.component";
 import { devLibs } from "../dev-lib-overrides.component";
+import ModuleTable from "./module-table.component.js";
 
 export default class List extends Component {
   state = {
@@ -152,8 +153,57 @@ export default class List extends Component {
     defaultModules.sort(sorter);
     nextOverriddenModules.sort(sorter);
 
+    const filterAsApp = x => x.moduleName.indexOf('_fallback') === -1;
+    const filterAsFallback = x => x.moduleName.indexOf('_fallback') !== -1;
+
+    const apps = {
+      nextOverriddenModules: nextOverriddenModules.filter(filterAsApp),
+      pendingRefreshDefaultModules: pendingRefreshDefaultModules.filter(filterAsApp),
+      disabledOverrides: disabledOverrides.filter(filterAsApp),
+      overriddenModules: overriddenModules.filter(filterAsApp),
+      externalOverrideModules: externalOverrideModules.filter(filterAsApp),
+      devLibModules: devLibModules.filter(filterAsApp),
+      defaultModules: defaultModules.filter(filterAsApp),
+    }
+
+    const fallbacks = {
+      nextOverriddenModules: nextOverriddenModules.filter(filterAsFallback),
+      pendingRefreshDefaultModules: pendingRefreshDefaultModules.filter(filterAsFallback),
+      disabledOverrides: disabledOverrides.filter(filterAsFallback),
+      overriddenModules: overriddenModules.filter(filterAsFallback),
+      externalOverrideModules: externalOverrideModules.filter(filterAsFallback),
+      devLibModules: devLibModules.filter(filterAsFallback),
+      defaultModules: defaultModules.filter(filterAsFallback),
+    }
+
     const { brokenMaps, workingCurrentPageMaps, workingNextPageMaps } =
       getExternalMaps();
+
+    const allFallbacks = [
+      ...fallbacks.nextOverriddenModules,
+      ...fallbacks.pendingRefreshDefaultModules,
+      ...fallbacks.disabledOverrides,
+      ...fallbacks.overriddenModules,
+      ...fallbacks.externalOverrideModules,
+      ...fallbacks.devLibModules,
+      ...fallbacks.defaultModules,
+    ]
+
+    const disableAllFallbacks = () => {
+      allFallbacks.forEach(fallback => {
+        window.importMapOverrides.addOverride(fallback.moduleName, 'fallback-disabled');
+      })
+    }
+    
+    const enableAllFallbacks = () => {
+      allFallbacks.forEach(fallback => {
+        window.importMapOverrides.removeOverride(fallback.moduleName);
+      })
+    }
+
+    const onClickRow = (mod) => {
+      this.setState({ dialogModule: mod })
+    }
 
     return (
       <div className="imo-list-container">
@@ -194,133 +244,36 @@ export default class List extends Component {
             </button>
           </div>
         </div>
-        <table className="imo-overrides-table">
-          <thead>
-            <tr>
-              <th>Module Status</th>
-              <th>Module Name</th>
-              <th>Domain</th>
-              <th>Filename</th>
-            </tr>
-          </thead>
-          <tbody>
-            {nextOverriddenModules.map((mod) => (
-              <tr
-                role="button"
-                tabIndex={0}
-                onClick={() => this.setState({ dialogModule: mod })}
-                key={mod.moduleName}
-              >
-                <td onClick={this.reload} role="button" tabIndex={0}>
-                  <div className="imo-status imo-next-override" />
-                  <div>Inline Override</div>
-                  <div className="imo-needs-refresh" />
-                </td>
-                <td>{mod.moduleName}</td>
-                <td>{toDomain(mod)}</td>
-                <td>{toFileName(mod)}</td>
-              </tr>
-            ))}
-            {pendingRefreshDefaultModules.map((mod) => (
-              <tr
-                role="button"
-                tabIndex={0}
-                onClick={() => this.setState({ dialogModule: mod })}
-                key={mod.moduleName}
-              >
-                <td style={{ position: "relative" }}>
-                  <div className="imo-status imo-next-default" />
-                  <div>Default</div>
-                  <div className="imo-needs-refresh" />
-                </td>
-                <td>{mod.moduleName}</td>
-                <td>{toDomain(mod)}</td>
-                <td>{toFileName(mod)}</td>
-              </tr>
-            ))}
-            {disabledOverrides.map((mod) => (
-              <tr
-                role="button"
-                tabIndex={0}
-                onClick={() => this.setState({ dialogModule: mod })}
-                key={mod.moduleName}
-              >
-                <td>
-                  <div className="imo-status imo-disabled-override" />
-                  <div>Override disabled</div>
-                </td>
-                <td>{mod.moduleName}</td>
-                <td>{toDomain(mod)}</td>
-                <td>{toFileName(mod)}</td>
-              </tr>
-            ))}
-            {overriddenModules.map((mod) => (
-              <tr
-                role="button"
-                tabIndex={0}
-                onClick={() => this.setState({ dialogModule: mod })}
-                key={mod.moduleName}
-              >
-                <td>
-                  <div className="imo-status imo-current-override" />
-                  <div>Inline Override</div>
-                </td>
-                <td>{mod.moduleName}</td>
-                <td>{toDomain(mod)}</td>
-                <td>{toFileName(mod)}</td>
-              </tr>
-            ))}
-            {externalOverrideModules.map((mod) => (
-              <tr
-                role="button"
-                tabIndex={0}
-                onClick={() => this.setState({ dialogModule: mod })}
-                key={mod.moduleName}
-              >
-                <td>
-                  <div className="imo-status imo-external-override" />
-                  <div>External Override</div>
-                </td>
-                <td>{mod.moduleName}</td>
-                <td>{toDomain(mod)}</td>
-                <td>{toFileName(mod)}</td>
-              </tr>
-            ))}
-            {devLibModules.map((mod) => (
-              <tr
-                role="button"
-                tabIndex={0}
-                onClick={() => this.setState({ dialogModule: mod })}
-                key={mod.moduleName}
-                title="Automatically use dev version of certain npm libs"
-              >
-                <td>
-                  <div className="imo-status imo-dev-lib-override" />
-                  <div>Dev Lib Override</div>
-                </td>
-                <td>{mod.moduleName}</td>
-                <td>{toDomain(mod)}</td>
-                <td>{toFileName(mod)}</td>
-              </tr>
-            ))}
-            {defaultModules.map((mod) => (
-              <tr
-                role="button"
-                tabIndex={0}
-                onClick={() => this.setState({ dialogModule: mod })}
-                key={mod.moduleName}
-              >
-                <td>
-                  <div className="imo-status imo-default-module" />
-                  <div>Default</div>
-                </td>
-                <td>{mod.moduleName}</td>
-                <td>{toDomain(mod)}</td>
-                <td>{toFileName(mod)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <h3>Apps</h3>
+        <ModuleTable
+          nextOverriddenModules={apps.nextOverriddenModules}
+          pendingRefreshDefaultModules={apps.pendingRefreshDefaultModules}
+          disabledOverrides={apps.disabledOverrides}
+          overriddenModules={apps.overriddenModules}
+          externalOverrideModules={apps.externalOverrideModules}
+          devLibModules={apps.devLibModules}
+          defaultModules={apps.defaultModules}
+          onClickRow={onClickRow}
+        />
+        <h3>Fallbacks</h3>
+        <button
+          className="imo-add-new"
+          onClick={disableAllFallbacks}
+        >Disable Fallbacks</button>
+        <button
+          className="imo-add-new"
+          onClick={enableAllFallbacks}
+        >Enable Fallbacks</button>
+        <ModuleTable
+          nextOverriddenModules={fallbacks.nextOverriddenModules}
+          pendingRefreshDefaultModules={fallbacks.pendingRefreshDefaultModules}
+          disabledOverrides={fallbacks.disabledOverrides}
+          overriddenModules={fallbacks.overriddenModules}
+          externalOverrideModules={fallbacks.externalOverrideModules}
+          devLibModules={fallbacks.devLibModules}
+          defaultModules={fallbacks.defaultModules}
+          onClickRow={onClickRow}
+        />
         {(brokenMaps.length > 0 ||
           workingCurrentPageMaps.length > 0 ||
           workingNextPageMaps.length > 0) && (
