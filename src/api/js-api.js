@@ -520,7 +520,7 @@ function expandRelativeUrlImports(imports, baseUrl) {
   }, {});
 }
 
-function expandRelativeUrlsInImportMap(importMap, baseUrl) {
+export function expandRelativeUrlsInImportMap(importMap, baseUrl) {
   return {
     imports: expandRelativeUrlImports(importMap.imports || {}, baseUrl),
     scopes: Object.keys(importMap.scopes || {}).reduce((result, scopeKey) => {
