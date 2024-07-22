@@ -12,9 +12,16 @@ export default class ModuleTable extends Component {
         if (this.props.prodMap && this.props.prodMap.imports[mod.moduleName] === mod.overrideUrl) {
           setTo.push('prod');
         }
+        if (mod.overrideUrl.indexOf('http://localhost') > -1) {
+          return 'local';
+        }
       }
 
-      return setTo.join(', ');
+      if (setTo.length === 0) {
+        return 'default';
+      } else {
+        return setTo.join(', ');
+      }
     }
 
     return (
