@@ -4,6 +4,10 @@ import ModuleDialog from "./module-dialog.component";
 import ExternalImportMap from "./external-importmap-dialog.component";
 import { devLibs } from "../dev-lib-overrides.component";
 import ModuleTable from "./module-table.component.js";
+import { expandRelativeUrlsInImportMap } from '../../api/js-api.js';
+
+const stagingUrl = "https://console.stg01.jumpcloud.com/importmap.json";
+const prodUrl = "https://console.jumpcloud.com/importmap.json"
 
 export default class List extends Component {
   state = {
@@ -13,6 +17,9 @@ export default class List extends Component {
     dialogModule: null,
     dialogExternalMap: null,
     searchVal: "",
+    stagingMap: { imports: {} },
+    prodMap: { imports: {} },
+    prMap: { imports: {} },
   };
   componentDidMount() {
     window.importMapOverrides.getDefaultMap().then((notOverriddenMap) => {
@@ -26,6 +33,12 @@ export default class List extends Component {
     });
     window.addEventListener("import-map-overrides:change", this.doUpdate);
     this.inputRef.focus();
+    this.fetchMap(stagingUrl).then((stagingMap) => {
+      this.setState({ stagingMap });
+    });
+    this.fetchMap(prodUrl).then((prodMap) => {
+      this.setState({ prodMap });
+    });
   }
   componentWillUnmount() {
     window.removeEventListener("import-map-overrides:change", this.doUpdate);
@@ -205,6 +218,27 @@ export default class List extends Component {
       this.setState({ dialogModule: mod })
     }
 
+    const setToMap = (map) => {
+      Object.keys(map.imports)
+        .filter(x => x.indexOf('_fallback') === -1)
+        .forEach(moduleName => {
+          window.importMapOverrides.addOverride(moduleName, map.imports[moduleName]);
+        });
+    }
+
+    const setToStaging = async () => {
+      const stagingMap = await this.fetchMap('https://console.stg01.jumpcloud.com/importmap.json')
+      setToMap(stagingMap);
+    }
+
+    const setToProd = async () => {
+      const prodMap = await this.fetchMap('https://console.jumpcloud.com/importmap.json')
+      setToMap(prodMap);
+    }
+
+    const setToPr = async () => {
+    };    
+
     return (
       <div className="imo-list-container">
         <div className="imo-table-header-actions">
@@ -245,6 +279,12 @@ export default class List extends Component {
           </div>
         </div>
         <h3>Apps</h3>
+        <div class="button-row">
+          <p>Set to:</p>
+          <button onClick={setToStaging}>Staging</button>
+          <button onClick={setToProd}>Production</button>
+          <button onClick={setToPr}>PR</button>
+        </div>
         <ModuleTable
           nextOverriddenModules={apps.nextOverriddenModules}
           pendingRefreshDefaultModules={apps.pendingRefreshDefaultModules}
@@ -254,6 +294,8 @@ export default class List extends Component {
           devLibModules={apps.devLibModules}
           defaultModules={apps.defaultModules}
           onClickRow={onClickRow}
+          stagingMap={this.state.stagingMap}
+          prodMap={this.state.prodMap}
         />
         <h3>Fallbacks</h3>
         <button
@@ -383,6 +425,23 @@ export default class List extends Component {
       ? includes(moduleName, this.state.searchVal)
       : true;
   };
+
+  async fetchMap(url) {
+    return new Promise((resolve, reject) => {
+      if (url === "https://console.stg01.jumpcloud.com/importmap.json") {
+        resolve(
+          {"imports":{"@jumpcloud-ap/monolith_app":"https://cdn03.jumpcloud.com/admin/@jumpcloud-ap/monolith_app/20240719.19.2628-e48329/app.js","@jumpcloud-ap/monolith_app_fallback":"https://cdn03.jumpcloud.com/admin/@jumpcloud-ap/monolith_app/20240719.17.1515-bae444/app.js","@jumpcloud-ap/peripheralui_app":"https://cdn03.jumpcloud.com/admin/@jumpcloud-ap/peripheralui_app/20240719.17.1515-bae444/app.js","@jumpcloud-ap/peripheralui_app_fallback":"https://cdn03.jumpcloud.com/admin/@jumpcloud-ap/peripheralui_app/20240703.18.2354-4bb359/app.js","@jumpcloud-ap/sidenav_app":"https://cdn03.jumpcloud.com/admin/@jumpcloud-ap/sidenav_app/20240719.17.1515-bae444/app.js","@jumpcloud-ap/sidenav_app_fallback":"https://cdn03.jumpcloud.com/admin/@jumpcloud-ap/sidenav_app/20240717.17.639-07ad30/app.js","@jumpcloud-ap/topnav_app":"https://cdn03.jumpcloud.com/admin/@jumpcloud-ap/topnav_app/20240719.17.1515-bae444/app.js","@jumpcloud-ap/topnav_app_fallback":"https://cdn03.jumpcloud.com/admin/@jumpcloud-ap/topnav_app/20240719.14.5025-8af490/app.js"}}
+        )
+      } else if (url === "https://console.jumpcloud.com/importmap.json") {
+        resolve(
+          {"imports":{"@jumpcloud-ap/monolith_app":"https://cdn03.jumpcloud.com/admin/@jumpcloud-ap/monolith_app/20240719.19.2628-e48329/app.js","@jumpcloud-ap/monolith_app_fallback":"https://cdn03.jumpcloud.com/admin/@jumpcloud-ap/monolith_app/20240719.17.1515-bae444/app.js","@jumpcloud-ap/peripheralui_app":"https://cdn03.jumpcloud.com/admin/@jumpcloud-ap/peripheralui_app/20240719.17.1515-prodma/app.js","@jumpcloud-ap/peripheralui_app_fallback":"https://cdn03.jumpcloud.com/admin/@jumpcloud-ap/peripheralui_app/20240702.19.937-a66bf3/app.js","@jumpcloud-ap/sidenav_app":"https://cdn03.jumpcloud.com/admin/@jumpcloud-ap/sidenav_app/20240719.17.1515-bae444/app.js","@jumpcloud-ap/sidenav_app_fallback":"https://cdn03.jumpcloud.com/admin/@jumpcloud-ap/sidenav_app/20240717.17.637-2809d4/app.js","@jumpcloud-ap/topnav_app":"https://cdn03.jumpcloud.com/admin/@jumpcloud-ap/topnav_app/20240719.17.1515-bae444/app.js","@jumpcloud-ap/topnav_app_fallback":"https://cdn03.jumpcloud.com/admin/@jumpcloud-ap/topnav_app/20240719.14.5025-8af490/app.js"}}
+        )
+      } else {
+        reject('invalid source');
+      }
+    })
+      .then((importMap) => expandRelativeUrlsInImportMap(importMap, url));
+  }
 }
 
 function sorter(first, second) {

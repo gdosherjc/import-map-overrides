@@ -259,3 +259,11 @@
   padding: 5px;
   color: black;
 }
+
+/* Fake tailwind */
+
+.button-row {
+  align-items: center;
+  display: flex;
+  gap: 1rem;
+}

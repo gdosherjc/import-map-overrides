@@ -2,12 +2,28 @@ import { h, Component } from "preact";
 
 export default class ModuleTable extends Component {
   render() {
+    const toSetTo = (mod) => {
+      const setTo = [];
+
+      if (mod.overrideUrl && !mod.disabled) {
+        if (this.props.stagingMap && this.props.stagingMap.imports[mod.moduleName] === mod.overrideUrl) {
+          setTo.push('staging');
+        }
+        if (this.props.prodMap && this.props.prodMap.imports[mod.moduleName] === mod.overrideUrl) {
+          setTo.push('prod');
+        }
+      }
+
+      return setTo.join(', ');
+    }
+
     return (
       <table className="imo-overrides-table">
         <thead>
           <tr>
             <th>Module Status</th>
             <th>Module Name</th>
+            <th>Set to</th>
             <th>Domain</th>
             <th>Filename</th>
           </tr>
@@ -26,6 +42,7 @@ export default class ModuleTable extends Component {
                 <div className="imo-needs-refresh" />
               </td>
               <td>{mod.moduleName}</td>
+              <td>{toSetTo(mod)}</td>
               <td>{toDomain(mod)}</td>
               <td>{toFileName(mod)}</td>
             </tr>
@@ -43,6 +60,7 @@ export default class ModuleTable extends Component {
                 <div className="imo-needs-refresh" />
               </td>
               <td>{mod.moduleName}</td>
+              <td>{toSetTo(mod)}</td>
               <td>{toDomain(mod)}</td>
               <td>{toFileName(mod)}</td>
             </tr>
@@ -59,6 +77,7 @@ export default class ModuleTable extends Component {
                 <div>Override disabled</div>
               </td>
               <td>{mod.moduleName}</td>
+              <td>{toSetTo(mod)}</td>
               <td>{toDomain(mod)}</td>
               <td>{toFileName(mod)}</td>
             </tr>
@@ -75,6 +94,7 @@ export default class ModuleTable extends Component {
                 <div>Inline Override</div>
               </td>
               <td>{mod.moduleName}</td>
+              <td>{toSetTo(mod)}</td>
               <td>{toDomain(mod)}</td>
               <td>{toFileName(mod)}</td>
             </tr>
@@ -91,6 +111,7 @@ export default class ModuleTable extends Component {
                 <div>External Override</div>
               </td>
               <td>{mod.moduleName}</td>
+              <td>{toSetTo(mod)}</td>
               <td>{toDomain(mod)}</td>
               <td>{toFileName(mod)}</td>
             </tr>
@@ -108,6 +129,7 @@ export default class ModuleTable extends Component {
                 <div>Dev Lib Override</div>
               </td>
               <td>{mod.moduleName}</td>
+              <td>{toSetTo(mod)}</td>
               <td>{toDomain(mod)}</td>
               <td>{toFileName(mod)}</td>
             </tr>
@@ -124,6 +146,7 @@ export default class ModuleTable extends Component {
                 <div>Default</div>
               </td>
               <td>{mod.moduleName}</td>
+              <td>{toSetTo(mod)}</td>
               <td>{toDomain(mod)}</td>
               <td>{toFileName(mod)}</td>
             </tr>
